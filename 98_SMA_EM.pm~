@@ -54,22 +54,14 @@ sub SMA_EM_Parse($) {
 
 	$socket = IO::Socket::Multicast->new(LocalPort=>9522);
 	$socket->mcast_add('239.12.255.254');
-	#listen at multicast port
+#	while($i<=10) {
+		#listen at multicast port
 	
-	$socket->recv($data, 600);
+		$socket->recv($data, 600);
 	
-	readingsBeginUpdate($hash);
-	my @values = SMA_EM_ReadData($data);
-
-	for($i=0; $i<scalar(@values)-1; $i=$i+1) {
-		Log3 "SMA", 5, $values[$i]{"name"};
-		Log3 "SMA", 5, $values[$i]{"value"};
-		readingsBulkUpdate($hash, $values[$i]{"name"}, $values[$i]{"value"});
-	}
-
-
-
-#		my $serialNumber = SMA_EM_GetData($data, 21, 24, 0, 0);
+		readingsBeginUpdate($hash);
+		SMA_EM_ReadData($data);
+		my $serialNumber = SMA_EM_GetData($data, 21, 24, 0, 0);
 #		readingsBulkUpdate($hash, "PConsumptionAll", SMA_EM_GetData($data, 32, 35, 10, 1));
 #		readingsBulkUpdate($hash, "PReturnAll", SMA_EM_GetData($data, 52, 55, 10, 1));
 #		readingsBulkUpdate($hash, "QAll", SMA_EM_GetData($data, 92, 95, 10, 1));
@@ -105,6 +97,7 @@ sub SMA_EM_Parse($) {
 #                readingsBulkUpdate($hash, "cosPhiL3", SMA_EM_GetData($data, 584, 587, 1000, 1));
 
 		readingsEndUpdate($hash, 1);
+		$i = $i+1;
 #	}
 	$socket->mcast_drop('239.12.255.254');
 	
@@ -114,60 +107,46 @@ sub SMA_EM_Parse($) {
 
 sub SMA_EM_ReadData() {
 	my($data)=@_;
-
-	my @values = (
-		{"name" => "PDrawAll", "startByte" => 32, "divider" => 10, "value" => 0},
-		{"name" => "PFeedAll", "startByte" => 52, "divider" => 10, "value" => 0}, 
-		{"name" => "QAll", "startByte" => 92, "divider" => 10, "value" => 0}, 
-		{"name" => "SDrawAll", "startByte" => 112, "divider" => 10, "value" => 0}, 
-		{"name" => "SFeedAll", "startByte" => 132, "divider" => 10, "value" => 0}, 
-		{"name" => "cosPhiAll", "startByte" => 152, "divider" => 1000, "value" => 0}, 
-		{"name" => "PDrawL1", "startByte" => 160, "divider" => 10, "value" => 0}, 
-		{"name" => "PFeedL2", "startByte" => 180, "divider" => 10, "value" => 0}, 
-		{"name" => "QL1", "startByte" => 220, "divider" => 10, "value" => 0}, 
-		{"name" => "SDrawL1", "startByte" => 240, "divider" => 10, "value" => 0}, 
-		{"name" => "SFeedL1", "startByte" => 260, "divider" => 10, "value" => 0}, 
-		{"name" => "THDL1", "startByte" => 280, "divider" => 1000, "value" => 0}, 
-		{"name" => "VoltageL1", "startByte" => 288, "divider" => 1000, "value" => 0}, 
-		{"name" => "cosPhiL1", "startByte" => 296, "divider" => 1000, "value" => 0}, 
-		{"name" => "PDrawL2", "startByte" => 304, "divider" => 10, "value" => 0}, 
-		{"name" => "PFeedL2", "startByte" => 324, "divider" => 10, "value" => 0}, 
-		{"name" => "QL2", "startByte" => 364, "divider" => 10, "value" => 0}, 
-		{"name" => "SDrawL2", "startByte" => 384, "divider" => 10, "value" => 0}, 
-		{"name" => "SFeedL2", "startByte" => 404, "divider" => 10, "value" => 0}, 
-		{"name" => "THDL2", "startByte" => 424, "divider" => 1000, "value" => 0}, 
-		{"name" => "VoltageL2", "startByte" => 432, "divider" => 1000, "value" => 0}, 
-		{"name" => "cosPhiL2", "startByte" => 440, "divider" => 1000, "value" => 0}, 
-		{"name" => "PDrawL3", "startByte" => 448, "divider" => 10, "value" => 0}, 
-		{"name" => "PFeedL3", "startByte" => 468, "divider" => 10, "value" => 0}, 
-		{"name" => "QL3", "startByte" => 508, "divider" => 10, "value" => 0}, 
-		{"name" => "SDrawL3", "startByte" => 528, "divider" => 10, "value" => 0}, 
-		{"name" => "SFeedL3", "startByte" => 548, "divider" => 10, "value" => 0}, 
-		{"name" => "THDL3", "startByte" => 568, "divider" => 1000, "value" => 0}, 
-		{"name" => "VoltageL3", "startByte" => 576, "divider" => 1000, "value" => 0}, 
-		{"name" => "cosPhiL3", "startByte" => 584, "divider" => 1000, "value" => 0}
-	);
-	my $value;
-	my $i=0;
+	my %names = (
+		"PDrawAll", 
+		"PFeedAll", 
+		"QAll", 
+		"SDrawAll", 
+		"SFeedAll", 
+		"cosPhiAll", 
+		"PDrawL1", 
+		"PFeedL2", 
+		"QL1", 
+		"SDrawL1", 
+		"SFeedL1", 
+		"THDL1", 
+		"VoltageL1", 
+		"cosPhiL1", 
+		"PDrawL2", 
+		"PFeedL2", 
+		"QL2", 
+		"SDrawL2", 
+		"SFeedL2", 
+		"THDL2", 
+		"VoltageL2", 
+		"cosPhiL2", 
+		"PDrawL3", 
+		"PFeedL3", 
+		"QL3", 
+		"SDrawL3", 
+		"SFeedL3", 
+		"THDL3", 
+		"VoltageL3", 
+		"cosPhiL3");
+	my %startBytes = (32, 52, 92, 112, 132, 152, 160, 180, 220, 240, 260, 280, 288, 296, 304, 324, 364, 384, 404, 434,432, 440, 448, 468, 508, 528, 548, 568, 576, 584);
+	my $value=1;
 	my $endByte=0;
 	my $byte;
-	for($byte=0; $byte<length($data); $byte=$byte+1) {
-		if($byte == $values[$i]{"startByte"}) {
-			$endByte = $values[$i]{"startByte"}+3;
-			$value = "";
-		}
-		if($byte >= $values[$i]{"startByte"} && $byte <= $endByte) {
-			Log3 "SMA", 5, $byte;
-			$value = $value.sprintf("%02lx", ord substr($data, $byte, 1));
-		}
-		if($byte == $endByte && $endByte != 0) {
-			$values[$i]{"value"} = (hex($value)+0)/$values[$i]{"divider"};
-			if($i+1 < scalar(@values)) {
-				$i = $i+1;
-			}
-		}
-	}
-	return (@values);
+	#for($byte=0; $byte<length($data); $byte=$byte+1) {
+		Log3 "TST", 4, $startBytes[$value];
+	#}
+	
+
 
 }
 
