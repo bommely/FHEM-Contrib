@@ -51,7 +51,7 @@ sub SMA_EM_Parse($) {
 	my $data;
 	my $i=0;
 
-
+	Log3 "SMA", 5, "readData";
 	$socket = IO::Socket::Multicast->new(LocalPort=>9522);
 	$socket->mcast_add('239.12.255.254');
 	#listen at multicast port
@@ -61,9 +61,9 @@ sub SMA_EM_Parse($) {
 	readingsBeginUpdate($hash);
 	my @values = SMA_EM_ReadData($data);
 
-	for($i=0; $i<scalar(@values)-1; $i=$i+1) {
-		Log3 "SMA", 5, $values[$i]{"name"};
-		Log3 "SMA", 5, $values[$i]{"value"};
+	for($i=0; $i<scalar(@values); $i=$i+1) {
+#		Log3 "SMA", 5, $values[$i]{"name"};
+#		Log3 "SMA", 5, $values[$i]{"value"};
 		readingsBulkUpdate($hash, $values[$i]{"name"}, $values[$i]{"value"});
 	}
 
@@ -107,6 +107,7 @@ sub SMA_EM_Parse($) {
 		readingsEndUpdate($hash, 1);
 #	}
 	$socket->mcast_drop('239.12.255.254');
+	InternalTimer(gettimeofday()+10, "SMA_EM_Parse", $hash, 0);
 	
 	
 	
@@ -123,7 +124,7 @@ sub SMA_EM_ReadData() {
 		{"name" => "SFeedAll", "startByte" => 132, "divider" => 10, "value" => 0}, 
 		{"name" => "cosPhiAll", "startByte" => 152, "divider" => 1000, "value" => 0}, 
 		{"name" => "PDrawL1", "startByte" => 160, "divider" => 10, "value" => 0}, 
-		{"name" => "PFeedL2", "startByte" => 180, "divider" => 10, "value" => 0}, 
+		{"name" => "PFeedL1", "startByte" => 180, "divider" => 10, "value" => 0}, 
 		{"name" => "QL1", "startByte" => 220, "divider" => 10, "value" => 0}, 
 		{"name" => "SDrawL1", "startByte" => 240, "divider" => 10, "value" => 0}, 
 		{"name" => "SFeedL1", "startByte" => 260, "divider" => 10, "value" => 0}, 
@@ -157,7 +158,7 @@ sub SMA_EM_ReadData() {
 			$value = "";
 		}
 		if($byte >= $values[$i]{"startByte"} && $byte <= $endByte) {
-			Log3 "SMA", 5, $byte;
+#			Log3 "SMA", 5, $byte;
 			$value = $value.sprintf("%02lx", ord substr($data, $byte, 1));
 		}
 		if($byte == $endByte && $endByte != 0) {
